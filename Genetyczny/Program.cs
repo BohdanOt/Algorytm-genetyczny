@@ -1,4 +1,4 @@
-// Program klasycznego algorytmy genetycznego v.1.0
+﻿// Program klasycznego algorytmy genetycznego v.1.0
 // Program napisany w języku C#
 // Ostatnia aktualizacja 2018-08-25
 // CopyLeft Feliks Kurp 2018

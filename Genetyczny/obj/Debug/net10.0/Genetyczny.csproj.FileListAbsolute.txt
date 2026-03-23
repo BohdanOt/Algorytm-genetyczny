@@ -1,0 +1,15 @@
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\bin\Debug\net10.0\Genetyczny.exe
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\bin\Debug\net10.0\Genetyczny.deps.json
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\bin\Debug\net10.0\Genetyczny.runtimeconfig.json
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\bin\Debug\net10.0\Genetyczny.dll
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\bin\Debug\net10.0\Genetyczny.pdb
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\Genetyczny.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\Genetyczny.AssemblyInfoInputs.cache
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\Genetyczny.AssemblyInfo.cs
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\Genetyczny.csproj.CoreCompileInputs.cache
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\Genetyczny.sourcelink.json
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\Genetyczny.dll
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\refint\Genetyczny.dll
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\Genetyczny.pdb
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\Genetyczny.genruntimeconfig.cache
+C:\Users\Lenovo\Desktop\algorytm genetyczny\Algorytm genetyczny\Genetyczny\obj\Debug\net10.0\ref\Genetyczny.dll
