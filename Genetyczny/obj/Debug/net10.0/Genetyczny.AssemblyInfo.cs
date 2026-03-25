@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Genetyczny")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0fb392ce58d0ebb6e2933f431b3b175684366ff6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7877c1cd8f565383f8299c2f7e0aecb4fc840b6b")]
 [assembly: System.Reflection.AssemblyProductAttribute("Genetyczny")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Genetyczny")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

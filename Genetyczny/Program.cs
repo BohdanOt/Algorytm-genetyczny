@@ -1,300 +1,146 @@
-﻿// Program klasycznego algorytmy genetycznego v.1.0
-// Program napisany w języku C#
-// Ostatnia aktualizacja 2018-08-25
-// CopyLeft Feliks Kurp 2018
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
 
-using System;
-
-namespace Genetyczny_v_1_0
-
+class Program
 {
-    struct Parametry
-    { //parametry symulacji
-        public const int lp = 40;
-        //liczba pokoleń w eksperymencie
-        public const double a = 1.5;
-        //wartość początkowa przestrzeni poszukiwań
-        public const double b = 3.5;
-        //wartość końcowa przestrzeni poszukiwań 
-        public const int N = 11;
-        //liczba genów w pojedynczym chromosomie
-        public const int pula = 60;
-        //liczba osobników  w populacji (liczba parzysta)
-        public const double pk = 0.75;
-        //prawdopodobieństwo krzyżowania
-        public const double pm = 0.01;
-        //prawdopodobieństwo mutacji
+    static Random rand = new Random();
+
+    const int CHROMOSOME_LENGTH = 11;
+    const int POP_SIZE = 50;
+    const int GENERATIONS = 200;
+    const double CROSS_PROB = 0.7;
+    const double MUT_PROB = 0.01;
+
+    static void Main()
+    {
+        var population = InitPopulation();
+
+        //Śledzenie najlepszego rozwiązania
+        string bestChromosomeEver = "";
+        double bestFitnessEver = double.MinValue;
+        int bestGeneration = 0;
+
+        for (int gen = 0; gen < GENERATIONS; gen++)
+        {
+            var fitness = population.Select(Fitness).ToList();
+
+            Console.WriteLine($"Generacja {gen} | Średnia: {fitness.Average():F4} | Max: {fitness.Max():F4}");
+
+            //Sprawdzamy najlepszy w tej generacji
+            double maxFitness = fitness.Max();
+            int bestIndex = fitness.IndexOf(maxFitness);
+
+            if (maxFitness > bestFitnessEver)
+            {
+                bestFitnessEver = maxFitness;
+                bestChromosomeEver = population[bestIndex];
+                bestGeneration = gen;
+            }
+
+            var newPopulation = new List<string>();
+
+            while (newPopulation.Count < POP_SIZE)
+            {
+                var parent1 = Selection(population, fitness);
+                var parent2 = Selection(population, fitness);
+
+                var (child1, child2) = Crossover(parent1, parent2);
+
+                child1 = Mutation(child1);
+                child2 = Mutation(child2);
+
+                newPopulation.Add(child1);
+                newPopulation.Add(child2);
+            }
+
+            population = newPopulation.Take(POP_SIZE).ToList();
+        }
+
+        //Wynik (najlepszy ze wszystkich generacji)
+        double bestX = Decode(bestChromosomeEver);
+
+        Console.WriteLine("\n**WYNIK** ");
+        Console.WriteLine($"Najlepsza generacja: {bestGeneration}");
+        Console.WriteLine($"Chromosom: {bestChromosomeEver}");
+        Console.WriteLine($"x = {bestX:F3}");
+        Console.WriteLine($"f(x) = {bestFitnessEver:F6}");
     }
 
-    class LiczbyBazowe
+    //Inicjalizacja
+    static List<string> InitPopulation()
     {
-        static int[] tablicaBazowa = new int[100 * Parametry.lp];
-        public static int indexBazowy = 0;
-        //tablica i indeks bazowych liczb losowych dla generatora Random
+        var pop = new List<string>();
 
-        public void LosujBaze()
+        for (int i = 0; i < POP_SIZE; i++)
         {
-            Random Generator = new Random();
-            for (int i = 0; i < 100 * Parametry.lp; i++)
-                tablicaBazowa[i] = Generator.Next(256);
+            string chromosome = "";
+            for (int j = 0; j < CHROMOSOME_LENGTH; j++)
+                chromosome += rand.Next(2);
+
+            pop.Add(chromosome);
         }
-        public static int PobierzBazowa()
-        {
-            return tablicaBazowa[indexBazowy++];
-        }
-        public static int Power()
-        {   // liczy n-tą nieujemną potegę dwójki
-            int power = 1;
-            for (int i = 1; i <= Parametry.N; i++)
-                power = power * 2;
-            return power;
-        }
+
+        return pop;
     }
 
-    class Populacja
+  //Dekodowanie
+   static double Decode(string chrom)
     {
-        Byte[,] populacja;
-        //dwuwymiarowa tablica aktualnych chromosomów populacji,
-        //rozmieszczonych w kolejnych wierszach tablicy
+        int value = Convert.ToInt32(chrom, 2);
+        int max = (1 << CHROMOSOME_LENGTH) - 1;
+        return 1.5 + (3.5 - 1.5) * value / max;
+    }
 
-        public Populacja()
-        //konstruktor populacji - przydziela pamięć dla bitowej
-        //reprezentacji populacji chromosomów
-        { populacja = new Byte[Parametry.pula, Parametry.N]; }
+   //Funkcja celu
+    static double Fitness(string chrom)
+    {
+        double x = Decode(chrom);
+        return 1 + ((Math.Exp(x) * Math.Sin(Math.PI * x) - 1) / x);
+    }
 
-        double[] tablicaFenotypow = new double[Parametry.pula];
-        //tablica wartości fenotypów dla populacji chromosomów
+    //Selekcja ruletkowa
+    static string Selection(List<string> pop, List<double> fitness)
+    {
+        double sum = fitness.Sum();
+        double r = rand.NextDouble() * sum;
 
-        int power = LiczbyBazowe.Power();
-
-        double[] tablicaDostosowanie = new double[Parametry.pula];
-        //tablica wartości funkcji dostosowania dla populacji chromosomw
-
-        public void LosujPopulacje()
-        {   //metoda losuje nową populację chromosomów
-            //i umieszcza je w lokalnej tablicy 'populacja'
-            for (int pozycja = 0; pozycja < Parametry.pula; pozycja++)
-            {
-                Random Generator = new Random(LiczbyBazowe.PobierzBazowa());
-                for (int j = 0; j < Parametry.N; j++)
-                    populacja[pozycja, j] = (Byte)Generator.Next(2);
-            }
-        }
-
-        int ObliczFenotypChromosomu(int pozycjaChromosomu)
-        {   //metoda liczy reprezentację dziesiętną wskazanego chromosomu
-            int fenotyp = 0, rat = 1;
-            for (int j = 0; j < Parametry.N; j++)
-            { fenotyp = fenotyp + populacja[pozycjaChromosomu,j] * rat; rat = rat * 2; }
-            return fenotyp;
-        }
-        public void ObliczFenotypy()
-        {   //metoda liczy wartości fenotypów chromosomów populacji
-            //w liniowej przestrzeni poszukiwań <a,b>
-            //i umieszcza je w tablicy 'tablicaFenotypów'
-            for (int pozycja = 0; pozycja < Parametry.pula; pozycja++)
-              tablicaFenotypow[pozycja] = Parametry.a + (Parametry.b - Parametry.a)
-              * ObliczFenotypChromosomu(pozycja) / power;
-        }
- 
-        public void ObliczDostosowanie()
-        {   //metoda oblicza wartości funkcji dostosowania,
-            //umieszcza je w tablicy 'tablicaDostosowanie'
-            //a następnie normalizuje
-            double x;
-            for (int i = 0; i < Parametry.pula; i++)
-            {
-                 x = tablicaFenotypow[i];
-                 tablicaDostosowanie[i] = (Math.Exp(x) * Math.Sin(Math.PI * x) + 1)/ x;
-            }
-        }
-
-        void DostosowanieNormalizacja()
-        {   //normalizuje tablicę wartości funkcji dostosowania
-            //tak, aby zawierała wyłącznie wartości dodatnie
-            double min, max, offset;
-            min = max = tablicaDostosowanie[0];
-            foreach (double dostosowanie in tablicaDostosowanie)
-            {
-                  if (dostosowanie < min) min = dostosowanie;
-                  if (dostosowanie > max) max = dostosowanie;
-            }
-            offset = (max - min) / (Parametry.N - 1) - min;
-            for (int i = 0; i < Parametry.pula; i++)
-                tablicaDostosowanie[i] += offset;
-        }
-
-        public void Ruletka()
-        {   //selekcja chromosomów w populacji metodą koła ruletki
-
-                    Byte[,] nowePokolenie = new Byte[Parametry.pula, Parametry.N];
-                    //tablica pomocnicza chromosomów dla ruletki
-
-                    double[] tablicaNI = new double[Parametry.pula];
-                    //tablica pomocnicza ruletki
-
-                    DostosowanieNormalizacja();
-
-                    double sumaDostosowanie = 0;
-                    foreach (double dostosowanie in tablicaDostosowanie)
-                        sumaDostosowanie += dostosowanie;
-                    
-                    for (int i = 0; i < Parametry.pula; i++)
-                    {
-                        tablicaNI[i] = tablicaDostosowanie[i]
-                                       / sumaDostosowanie * power;
-                    }
-                
-                    int[] losowe = new int[Parametry.pula];
-                    //tabela 'losowe' przechowuje liczby losowe z przedziału 0...Power()
-                    Random Generator = new Random(LiczbyBazowe.PobierzBazowa());
-                    for (int i = 0; i < Parametry.pula; i++)
-                        losowe[i] = Generator.Next(power);
-
-                    double[] ruletka = new double[Parametry.pula];      
-                    //tablica pozycji wycinków ruletki
-
-                    double pozycja = 0;
-                    for (int i = 0; i < Parametry.pula; i++)
-                    {
-                        pozycja += tablicaNI[i];
-                        ruletka[i] = pozycja;
-                    }
-                        
-                    for (int i = 0; i < Parametry.pula; i++)
-                    {
-                        int j = 0;
-                        while (losowe[i] > ruletka[j])  j++;
-                        for (int k = 0; k < Parametry.N; k++)
-                            nowePokolenie[i,k] = populacja[j,k];
-                    }
-                        populacja = nowePokolenie;
-                }
-
-                void Krzyzowanie()
-                {
-                    Random Generator = new Random(LiczbyBazowe.PobierzBazowa());
-                    //tworzy generator liczb losowych oparty o kolejną
-                    //liczbę bazową
-
-                    //losowanie par osobników do krzyżowania
-                    int liczbaPar = Parametry.pula / 2;
-                    int[] losowePary = new int[liczbaPar];
-                    for (int i = 0; i < liczbaPar; i++)
-                        losowePary[i] = Generator.Next(100);
-
-                    //losowanie miejsc krzyżowania dla par
-                    int[] losoweMiejsca = new int[liczbaPar];
-                    for (int i = 0; i < liczbaPar; i++)
-                        losoweMiejsca[i] = Generator.Next(Parametry.N-2);
-
-                    //proces krzyżowania genów w parach
-                    int pierwszy = 0; //indeks pierwszego osobnika w każdej parze
-                    byte bufor;
-                    for (int para = 0; para < liczbaPar; para++)
-                    {
-                        if (losowePary[para] < Parametry.pk * 100)
-                            for (int i = losoweMiejsca[para]; i < Parametry.N; i++)
-                            {
-                                bufor = populacja[pierwszy, i];
-                                populacja[pierwszy, i] = populacja[pierwszy + 1, i];
-                                populacja[pierwszy + 1, i] = bufor;
-                            }
-                        pierwszy += 2;
-                    }
-                }
-
-               public void PokazFenotypyPopulacji()
-                {   //wyświetla fenotypy aktualnej populacji
-                    foreach (double fenotyp in tablicaFenotypow)
-                        Console.Write("{0:#.##}\n ", fenotyp);
-                }
-
-                public void Mutacje()
-                 {  //metoda losuje chromosomy do mutacji 
-                    //i mutuje losowe geny w wylosowanych chromosomach
-
-                    Random Generator = new Random(LiczbyBazowe.PobierzBazowa());
-                    //tworzy generator liczb losowych oparty o kolejną
-                    //liczbę bazową
-
-                    double[] losowe = new double[Parametry.pula];
-                    for (int i = 0; i < Parametry.pula; i++)
-                        losowe[i] = Generator.Next(100) / 100.0;
-
-                    //proces krzyżowania genów w parach
-                    int miejsceMutacji;
-                    for (int i = 0; i < Parametry.pula; i++)
-                        if (losowe[i] < Parametry.pm)
-                    {
-                        miejsceMutacji = Generator.Next(Parametry.N);
-                        if (populacja[i, miejsceMutacji] == 0)
-                            populacja[i, miejsceMutacji] = 1;
-                        else populacja[i, miejsceMutacji] = 0;
-                    }
-        }
-
-        public void PokazDostosowaniePopulacji()
-                {   //wyświetla wartości funkcji dostosowania 
-                    //chromosomów aktualnej populacji
-                    foreach (double dostosowanie in tablicaDostosowanie)
-                        Console.Write("{0:#.##}\n ",dostosowanie);
-                }
-    
-        void PokazChromosomyPopulacji()
+        double acc = 0;
+        for (int i = 0; i < pop.Count; i++)
         {
-            for (int i = 0; i < populacja.GetLength(0); i++)
-            {
-                for (int j = 0; j < populacja.GetLength(1); j++)
-                {
-                    System.Console.Write("{0} ", populacja[i, j]);
-                }
-                Console.WriteLine();
-            }
+            acc += fitness[i];
+            if (acc >= r)
+                return pop[i];
         }
 
-        public double ObliczDostosowanieSrednie()
+        return pop.Last();
+    }
+
+    //Krzyżowanie jednopunktowe
+    static (string, string) Crossover(string p1, string p2)
+    {
+        if (rand.NextDouble() > CROSS_PROB)
+            return (p1, p2);
+
+        int point = rand.Next(1, CHROMOSOME_LENGTH - 1);
+
+        string c1 = p1.Substring(0, point) + p2.Substring(point);
+        string c2 = p2.Substring(0, point) + p1.Substring(point);
+
+        return (c1, c2);
+    }
+
+    //Mutacja
+    static string Mutation(string chrom)
+    {
+        char[] genes = chrom.ToCharArray();
+
+        for (int i = 0; i < genes.Length; i++)
         {
-            double srednia = 0;
-            foreach (double dostosowanie in tablicaDostosowanie)
-                srednia += dostosowanie;
-            return srednia / Parametry.pula;
+            if (rand.NextDouble() < MUT_PROB)
+                genes[i] = genes[i] == '0' ? '1' : '0';
         }
 
-        public void PokazDostosowanieSrednie()
-        {   //wyświetla wartość średnią funkcji dostosowania 
-            //wszystkich chromosomów aktualnej populacji 
-            Console.WriteLine("{0:#.##}", ObliczDostosowanieSrednie());
-        }
-
-        class Program
-        {
-            static void Main(string[] args)
-            {
-                int nrPokolenia = 0;
-                LiczbyBazowe liczbyBazowe = new LiczbyBazowe();
-                liczbyBazowe.LosujBaze();
-                Populacja populacja = new Populacja();
-                populacja.LosujPopulacje();
-                //wylosowanie populacji rodzicielskiej
-                populacja.ObliczFenotypy();
-                populacja.ObliczDostosowanie();
-                Console.WriteLine("Nr pokolenia Srednia wartosc funkcji dostosowania");
-                Console.Write("{0, 3}          ", nrPokolenia);
-                populacja.PokazDostosowanieSrednie();
-                while (nrPokolenia < Parametry.lp)
-                {
-                    nrPokolenia++;
-                    populacja.Ruletka();
-                    populacja.Krzyzowanie();
-                    populacja.Mutacje();
-                    populacja.ObliczFenotypy();
-                    populacja.ObliczDostosowanie();
-                    Console.Write("{0, 3}          ", nrPokolenia);
-                    populacja.PokazDostosowanieSrednie();
-                }
-                Console.ReadKey();
-            }
-        }
+        return new string(genes);
     }
 }
