@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using ClosedXML.Excel;
 
 class Program
 {
@@ -8,13 +9,17 @@ class Program
 
     const int CHROMOSOME_LENGTH = 11;
     const int POP_SIZE = 50;
-    const int GENERATIONS = 200;
+    const int GENERATIONS = 100;
     const double CROSS_PROB = 0.7;
     const double MUT_PROB = 0.01;
 
     static void Main()
     {
         var population = InitPopulation();
+
+        //listy do zapisu
+        var avgList = new List<double>();
+        var maxList = new List<double>();
 
         //Śledzenie najlepszego rozwiązania
         string bestChromosomeEver = "";
@@ -25,15 +30,21 @@ class Program
         {
             var fitness = population.Select(Fitness).ToList();
 
-            Console.WriteLine($"Generacja {gen} | Średnia: {fitness.Average():F4} | Max: {fitness.Max():F4}");
+            double avg = fitness.Average();
+            double max = fitness.Max();
+
+            Console.WriteLine($"Generacja {gen} | Średnia: {avg:F4} | Max: {max:F4}");
+
+            //zapis do list
+            avgList.Add(avg);
+            maxList.Add(max);
 
             //Sprawdzamy najlepszy w tej generacji
-            double maxFitness = fitness.Max();
-            int bestIndex = fitness.IndexOf(maxFitness);
+            int bestIndex = fitness.IndexOf(max);
 
-            if (maxFitness > bestFitnessEver)
+            if (max > bestFitnessEver)
             {
-                bestFitnessEver = maxFitness;
+                bestFitnessEver = max;
                 bestChromosomeEver = population[bestIndex];
                 bestGeneration = gen;
             }
@@ -57,7 +68,7 @@ class Program
             population = newPopulation.Take(POP_SIZE).ToList();
         }
 
-        //Wynik (najlepszy ze wszystkich generacji)
+        //Wynik
         double bestX = Decode(bestChromosomeEver);
 
         Console.WriteLine("\n**WYNIK** ");
@@ -65,9 +76,32 @@ class Program
         Console.WriteLine($"Chromosom: {bestChromosomeEver}");
         Console.WriteLine($"x = {bestX:F3}");
         Console.WriteLine($"f(x) = {bestFitnessEver:F6}");
+
+        //zapis do Excel 
+        SaveToExcel(avgList, maxList);
     }
 
-    //Inicjalizacja
+    static void SaveToExcel(List<double> avgList, List<double> maxList)
+    {
+        var wb = new XLWorkbook();
+        var ws = wb.Worksheets.Add("Dane");
+
+        ws.Cell(1, 1).Value = "Generacja";
+        ws.Cell(1, 2).Value = "Średnia";
+        ws.Cell(1, 3).Value = "Max";
+
+        for (int i = 0; i < avgList.Count; i++)
+        {
+            ws.Cell(i + 2, 1).Value = i;
+            ws.Cell(i + 2, 2).Value = avgList[i];
+            ws.Cell(i + 2, 3).Value = maxList[i];
+        }
+
+        wb.SaveAs("wyniki.xlsx");
+
+        Console.WriteLine("\nPlik Excel zapisany jako: wyniki.xlsx");
+    }
+
     static List<string> InitPopulation()
     {
         var pop = new List<string>();
@@ -84,22 +118,19 @@ class Program
         return pop;
     }
 
-  //Dekodowanie
-   static double Decode(string chrom)
+    static double Decode(string chrom)
     {
         int value = Convert.ToInt32(chrom, 2);
         int max = (1 << CHROMOSOME_LENGTH) - 1;
         return 1.5 + (3.5 - 1.5) * value / max;
     }
 
-   //Funkcja celu
     static double Fitness(string chrom)
     {
         double x = Decode(chrom);
         return 1 + ((Math.Exp(x) * Math.Sin(Math.PI * x) - 1) / x);
     }
 
-    //Selekcja ruletkowa
     static string Selection(List<string> pop, List<double> fitness)
     {
         double sum = fitness.Sum();
@@ -116,7 +147,6 @@ class Program
         return pop.Last();
     }
 
-    //Krzyżowanie jednopunktowe
     static (string, string) Crossover(string p1, string p2)
     {
         if (rand.NextDouble() > CROSS_PROB)
@@ -130,7 +160,6 @@ class Program
         return (c1, c2);
     }
 
-    //Mutacja
     static string Mutation(string chrom)
     {
         char[] genes = chrom.ToCharArray();
